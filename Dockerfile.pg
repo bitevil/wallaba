@@ -1,0 +1,16 @@
+FROM postgres:9.6
+
+WORKDIR /pg
+
+COPY . .
+
+RUN echo "" > /etc/apt/sources.list.d/pgdg.list
+RUN echo 'deb http://archive.debian.org/debian/ stretch main contrib non-free' > /etc/apt/sources.list
+
+RUN apt-get update
+RUN apt-get install python3 -y -qq
+RUN apt-get -y install python3-pip -qq
+RUN apt-get install curl -y -qq
+RUN pip3 install -r requirements.txt
+
+CMD ["python3","agent.py"]

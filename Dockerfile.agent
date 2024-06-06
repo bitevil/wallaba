@@ -1,0 +1,15 @@
+FROM python:3.11-alpine
+
+ENV PYTHONDONTWRITEBYTECODE 1
+ENV PYTHONUNBUFFERED 1
+ENV IS_AGENT 1
+
+WORKDIR /agent
+
+COPY . .
+
+RUN pip install --upgrade pip
+RUN pip install -r requirements.txt
+RUN apk --no-cache add curl
+
+CMD ["python","referee.py"]

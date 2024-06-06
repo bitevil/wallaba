@@ -1,0 +1,74 @@
+version: '3'
+
+services:
+  pg-primary:
+    build:
+      dockerfile: Dockerfile.pg
+    image: 'gp_agent'
+    restart: always
+    hostname: db-1
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=public
+      - PGDATA=/var/lib/postgresql/data/pgdata
+      - DB_REFEREE=referee
+      - IS_PG_PRIMARY=PRIMARY
+      - PG_MAX_WAL_SENDERS=8
+      - PG_WAL_KEEP_SEGMENTS=8
+      - PG_PORT=5432
+    ports:
+      - "5432:5432"
+    depends_on:
+      - referee
+    healthcheck:
+      test: curl --fail http://localhost:5000/check || exit 1
+      interval: 60s
+      retries: 5
+      start_period: 20s
+      timeout: 10s
+    #command: curl -X POST -d '{"primary":"db-1"}' http://agent:5000/primary
+  pg-standby:
+    build:
+      dockerfile: Dockerfile.pg
+    image: 'gp_agent'
+    restart: always
+    hostname: db-2
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=public
+      - PGDATA=/var/lib/postgresql/data/pgdata
+      - DB_REFEREE=referee
+      - PG_MAX_WAL_SENDERS=8
+      - PG_WAL_KEEP_SEGMENTS=8
+      - PG_PORT=5433
+    ports:
+      - "5433:5432"
+    depends_on:
+      - referee
+      - pg-primary
+    healthcheck:
+      test: curl --fail http://localhost:5000/check || exit 1
+      interval: 60s
+      retries: 5
+      start_period: 20s
+      timeout: 10s
+  referee:
+    build:
+      dockerfile: Dockerfile.referee
+    image: 'referee'
+    restart: always
+    hostname: referee
+    healthcheck:
+      test: curl --fail http://localhost:5000/check || exit 1
+      interval: 60s
+      retries: 5
+      start_period: 20s
+      timeout: 10s
+    depends_on:
+      - redis
+  redis:
+    image: redis:latest
+    restart: always
+    hostname: redis
